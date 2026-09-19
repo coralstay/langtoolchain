@@ -2193,3 +2193,33 @@ lt_version_menu_options() {
   done
   return 0
 }
+
+# lt_valid_menu_choice <input> <option-count> (TASK-164): is <input> a valid
+# 1-based menu selection? Used by scripts/install/00_select.sh's
+# lt_arrow_menu() numbered-prompt fallback (stty -g < /dev/tty failing),
+# which reads a whole line via `read -r` (not one raw keypress like the
+# normal arrow-mode loop's own digit-shortcut classifier), so a two-digit
+# choice like "10" is a normal, expected input there - a `case ... in
+# [1-9])` glob only ever matches a single character and silently rejected
+# every option past 9 before this existed. Lives here rather than in
+# 00_select.sh, same reasoning as lt_resolve_version_list/
+# lt_version_menu_options above: no /dev/tty access, so it's unit-testable
+# directly instead of only through a subprocess.
+#######################################
+# Check whether a string is a valid 1-based menu selection.
+# Globals:
+#   None
+# Arguments:
+#   $1: input — the raw string to validate
+#   $2: n — the valid option count
+# Outputs:
+#   None
+# Returns:
+#   0 if <input> is all-digits and within 1..<n>; 1 otherwise
+#######################################
+lt_valid_menu_choice() {
+  case "$1" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  [ "$1" -ge 1 ] && [ "$1" -le "$2" ]
+}

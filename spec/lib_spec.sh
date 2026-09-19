@@ -1662,4 +1662,38 @@ RUNNER_EOF
       The line 1 of output should eq '9.9.9 (default)'
     End
   End
+
+  Describe 'lt_valid_menu_choice() (TASK-164)'
+    It 'accepts a value within 1..n'
+      When call lt_valid_menu_choice '10' '15'
+      The status should be success
+    End
+
+    It 'rejects a value above n (silent default-keep territory before'\
+' this fix)'
+      When call lt_valid_menu_choice '16' '15'
+      The status should be failure
+    End
+
+    It 'rejects zero'
+      When call lt_valid_menu_choice '0' '15'
+      The status should be failure
+    End
+
+    It 'rejects non-digit input'
+      When call lt_valid_menu_choice 'abc' '15'
+      The status should be failure
+    End
+
+    It 'rejects an empty string'
+      When call lt_valid_menu_choice '' '15'
+      The status should be failure
+    End
+
+    It 'accepts a two-digit value at the upper bound (the exact bug this'\
+' task fixes - a single-char [1-9] glob could never match "15")'
+      When call lt_valid_menu_choice '15' '15'
+      The status should be success
+    End
+  End
 End
