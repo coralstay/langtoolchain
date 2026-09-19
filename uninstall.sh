@@ -2,7 +2,7 @@
 # langtoolchain — one-line uninstaller
 #
 #   curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 \
-#     https://raw.githubusercontent.com/amosQP/langtoolchain/main/uninstall.sh | sh
+#     https://raw.githubusercontent.com/coralstay/langtoolchain/main/uninstall.sh | sh
 #
 # Thin entry point — real logic lives in scripts/uninstall/*.sh. See
 # install.sh (its sibling) for a more detailed line-by-line explanation of
@@ -20,7 +20,7 @@ set -eu
 #
 # LANGTOOLCHAIN_REPO_URL / LANGTOOLCHAIN_BRANCH (TASK-117.6): same opt-in
 # override as install.sh — see its copy of this comment for the reasoning.
-readonly REPO_URL="${LANGTOOLCHAIN_REPO_URL:-https://github.com/amosQP/langtoolchain.git}"
+readonly REPO_URL="${LANGTOOLCHAIN_REPO_URL:-https://github.com/coralstay/langtoolchain.git}"
 readonly BRANCH="${LANGTOOLCHAIN_BRANCH:-896b4c5a7ecf82f43056d0cae7bb787f1ab3ee83}"
 
 # $0, not ${BASH_SOURCE[0]:-} (POSIX sh has no BASH_SOURCE) — see

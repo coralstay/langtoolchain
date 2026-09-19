@@ -18,7 +18,7 @@
 
 ```zsh
 curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/amosQP/langtoolchain/main/install.sh | sh
+  https://raw.githubusercontent.com/coralstay/langtoolchain/main/install.sh | sh
 ```
 
 <br>
@@ -57,13 +57,13 @@ curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 \
 
 ```zsh
 curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/amosQP/langtoolchain/main/install.sh | sh
+  https://raw.githubusercontent.com/coralstay/langtoolchain/main/install.sh | sh
 ```
 
 로컬에 이미 클론해뒀다면:
 
 ```zsh
-git clone https://github.com/amosQP/langtoolchain.git && cd langtoolchain
+git clone https://github.com/coralstay/langtoolchain.git && cd langtoolchain
 ./install.sh
 ```
 
@@ -163,7 +163,7 @@ Python 컴파일에 필요한 Homebrew 패키지(`openssl`, `readline`, `sqlite3
 
 ```zsh
 curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/amosQP/langtoolchain/main/uninstall.sh | sh
+  https://raw.githubusercontent.com/coralstay/langtoolchain/main/uninstall.sh | sh
 ```
 
 실행 전 한 번 확인을 물으며(`--yes`로 생략 가능), `--dry-run`도 동일하게 지원합니다. 설치/제거
@@ -269,6 +269,6 @@ install.sh/uninstall.sh가 각각 어떤 phase를 순서대로 거치는지, uni
 
 [MIT](https://opensource.org/licenses/MIT) — 누구나 자유롭게 가져다 쓰고 고칠 수 있습니다. (이 저장소의 [LICENSE](LICENSE) 파일도 동일한 내용입니다.)
 
-Made with 🧉 by [amosQP](https://github.com/amosQP)
+Made with 🧉 by [coralstay](https://github.com/coralstay)
 
 </div>
