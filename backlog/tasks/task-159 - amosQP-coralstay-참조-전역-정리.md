@@ -1,14 +1,19 @@
 ---
 id: TASK-159
 title: amosQP -> coralstay 참조 전역 정리
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-19 15:41'
-updated_date: '2026-09-19 15:44'
+updated_date: '2026-09-19 16:08'
 labels: []
 milestone: m-21
 dependencies:
   - TASK-158
+modified_files:
+  - README.md
+  - .github/workflows/e2e-verify.yml
+  - install.sh
+  - uninstall.sh
 ---
 
 ## Description
@@ -19,6 +24,18 @@ GitHub 계정이 amosQP에서 coralstay로 개명(동일인, 확인됨)됐는데
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 README.md/e2e-verify.yml의 amosQP 참조가 coralstay로 바뀌어 있다 (SonarCloud 키 제외)
-- [ ] #2 grep -rn amosQP 결과 sonar-project.properties/sonarcloud-issues-to-github.yml 외엔 안 남아있다
+- [x] #1 README.md/e2e-verify.yml의 amosQP 참조가 coralstay로 바뀌어 있다 (SonarCloud 키 제외)
+- [x] #2 grep -rn amosQP 결과 sonar-project.properties/sonarcloud-issues-to-github.yml 외엔 안 남아있다
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+당초 계획(README 6곳 + e2e-verify.yml)에 없던 install.sh:44/uninstall.sh:23의 REPO_URL 기본값도 발견해서 같이 고침 - curl|bash 경로의 실제 self-clone 대상이라 문서만 고치는 것보다 훨씬 중요한 지점이었음. spec/repo_override_spec.sh의 amosQP 언급은 TASK-117.6 이전 상태를 설명하는 과거형 주석이라 의도적으로 안 건드림.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+README.md 6곳 + e2e-verify.yml + install.sh/uninstall.sh REPO_URL까지 amosQP->coralstay 교체(SonarCloud 키 제외). grep -rn amosQP 결과 살아있는 코드 중엔 sonar-project.properties/sonarcloud-issues-to-github.yml(SonarCloud 식별자, 계획대로 제외)과 spec/repo_override_spec.sh의 과거형 설명 주석만 남음. shellcheck 기존 경고(SC3043, local 사용) 외 신규 이슈 없음, shellspec repo_override_spec 5/5 통과. 커밋 3fe1a57.
+<!-- SECTION:FINAL_SUMMARY:END -->
