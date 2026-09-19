@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 # check-hardcoded-paths.sh (TASK-125.3, decision-7): grep-based detector for
 # the "hardcoded path/env-var instead of the shared lib.sh helper" regression
-# class documented in scripts/lint/hardcoded-paths-patterns.md (TASK-125.1),
+# class documented in docs/hardcoded-paths-patterns.md (TASK-125.1),
 # based on real bugs fixed by TASK-57, 61, 65, 70.
 #
-# Checks (see hardcoded-paths-patterns.md for the full rationale):
+# Checks (see docs/hardcoded-paths-patterns.md for the full rationale):
 #   1. A literal ".asdf" path component instead of $ASDF_DATA_DIR /
 #      lt_asdf_data_dir() / $LT_ASDF_DATA_DIR_DEFAULT.
 #   2. A literal "/opt/homebrew" (Apple Silicon) or "/usr/local" (Intel)
