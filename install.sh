@@ -2,7 +2,7 @@
 # langtoolchain — one-line installer
 #
 #   curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 \
-#     https://raw.githubusercontent.com/amosQP/langtoolchain/main/install.sh | sh
+#     https://raw.githubusercontent.com/coralstay/langtoolchain/main/install.sh | sh
 #
 # This file only gets the real installer onto disk and runs it. The actual
 # logic lives in scripts/install/*.sh (one file per responsibility) so it's
@@ -41,7 +41,7 @@ set -eu
 # takeover, so accepting an override here doesn't weaken anything the
 # default path actually promised. Only fires the warning below when one of
 # these is actually set, so the default (no env vars) path stays silent.
-readonly REPO_URL="${LANGTOOLCHAIN_REPO_URL:-https://github.com/amosQP/langtoolchain.git}"
+readonly REPO_URL="${LANGTOOLCHAIN_REPO_URL:-https://github.com/coralstay/langtoolchain.git}"
 readonly BRANCH="${LANGTOOLCHAIN_BRANCH:-896b4c5a7ecf82f43056d0cae7bb787f1ab3ee83}"
 
 # $0 is this file's own path when it was executed from an actual file on
