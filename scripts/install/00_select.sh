@@ -182,6 +182,16 @@ _LT_DIM="$(printf '\033[2m')"
 _LT_BOLD="$(printf '\033[1m')"
 _LT_RESET="$(printf '\033[0m')"
 _LT_RAW_STTY=""
+# _LT_RAW_STTY_FILE (TASK-166): _LT_RAW_STTY alone can't reach the EXIT trap
+# below when lt_arrow_menu() runs inside a `$(...)` command substitution -
+# every call site does exactly that to capture its return value, and POSIX
+# forks a subshell for command substitution, so the assignment lt_arrow_menu
+# makes when entering raw mode never propagates back to this process. A
+# Ctrl-C during any menu left the terminal raw/no-echo forever as a result.
+# Persist the pre-raw-mode stty settings to a $$-scoped file instead - same
+# pattern as LT_VERSION_LIST_UNREACHABLE_FILE below, which crosses the exact
+# same subshell boundary for the same reason.
+_LT_RAW_STTY_FILE="${TMPDIR:-/tmp}/langtoolchain-raw-stty.$$"
 #######################################
 # Restore the terminal's pre-raw-mode stty settings, if any were saved.
 # Globals:
@@ -202,7 +212,14 @@ lt_restore_raw_stty() {
   # nothing was ever put into raw mode - is not an error, just a no-op.
   if [ -n "$_LT_RAW_STTY" ]; then
     stty "$_LT_RAW_STTY" < /dev/tty 2>/dev/null || true
+  elif [ -f "$_LT_RAW_STTY_FILE" ]; then
+    # The common case in practice (TASK-166): _LT_RAW_STTY is always empty
+    # here because it was only ever set inside lt_arrow_menu()'s command-
+    # substitution subshell, never in this process - the file is what
+    # actually crossed that boundary.
+    stty "$(cat "$_LT_RAW_STTY_FILE")" < /dev/tty 2>/dev/null || true
   fi
+  rm -f "$_LT_RAW_STTY_FILE"
 }
 
 # lt_arrow_menu <question> <default-index 1-based> <option...> (m-10/
@@ -368,9 +385,7 @@ lt_arrow_menu() {
     done
     tty_prompt "  > "
     read -r action < /dev/tty || action=""
-    case "$action" in
-      [1-9]) [ "$action" -le "$n" ] && selected="$action" ;;
-    esac
+    lt_valid_menu_choice "$action" "$n" && selected="$action"
     printf '%s\n' "$selected"
     return
   }
@@ -381,6 +396,10 @@ lt_arrow_menu() {
   # - a signal arriving mid-read would otherwise leave the tty stuck in
   # raw/no-echo mode (invisible typing) for the rest of the session.
   _LT_RAW_STTY="$old_stty"
+  # TASK-166: also persist to the $$-scoped file - this assignment above
+  # only lives in this command-substitution subshell (see _LT_RAW_STTY_FILE's
+  # own comment), so the parent's EXIT trap needs the file to recover it.
+  printf '%s\n' "$old_stty" > "$_LT_RAW_STTY_FILE"
   stty -icanon -echo min 1 time 0 < /dev/tty
 
   while :; do
@@ -400,11 +419,17 @@ lt_arrow_menu() {
           selected=1
         fi
         ;;
-      ENTER) stty "$old_stty" < /dev/tty; _LT_RAW_STTY=""; break ;;
+      ENTER)
+        stty "$old_stty" < /dev/tty
+        _LT_RAW_STTY=""
+        rm -f "$_LT_RAW_STTY_FILE"
+        break
+        ;;
       [1-9])
         selected="$action"
         stty "$old_stty" < /dev/tty
         _LT_RAW_STTY=""
+        rm -f "$_LT_RAW_STTY_FILE"
         break
         ;;
     esac
