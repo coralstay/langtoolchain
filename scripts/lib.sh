@@ -2223,3 +2223,34 @@ lt_valid_menu_choice() {
   esac
   [ "$1" -ge 1 ] && [ "$1" -le "$2" ]
 }
+
+# lt_nth_arg <n> <arg...> (TASK-165, decision-21): print the n-th (1-based)
+# remaining argument. POSIX sh has no arrays, so 00_select.sh's per-language
+# back-navigation loop keeps its plugin/version pairs as one flat positional-
+# parameter list (via `set --`) and needs random-access-by-index into it to
+# support stepping the index backward - a plain `while read` over a stream
+# can only move forward. Uses `shift` on this function's own copy of the
+# arguments (a function call gets its own positional parameters), so the
+# caller's own "$@" is untouched.
+#######################################
+# Print the n-th (1-based) of the remaining arguments.
+# Globals:
+#   None
+# Arguments:
+#   $1: n — 1-based index
+#   $2..: the list to index into
+# Outputs:
+#   The n-th argument, to STDOUT
+# Returns:
+#   None (undefined output if n is out of range - callers control both
+#   sides of this list and keep n in range)
+#######################################
+lt_nth_arg() {
+  local n="$1"
+  shift
+  while [ "$n" -gt 1 ]; do
+    shift
+    n=$((n - 1))
+  done
+  printf '%s\n' "$1"
+}

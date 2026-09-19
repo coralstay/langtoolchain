@@ -1696,4 +1696,31 @@ RUNNER_EOF
       The status should be success
     End
   End
+
+  Describe 'lt_nth_arg() (TASK-165, decision-21)'
+    It 'returns the first argument for n=1'
+      When call lt_nth_arg 1 nodejs lts java temurin
+      The output should eq 'nodejs'
+    End
+
+    It 'returns an arbitrary middle argument by index'
+      When call lt_nth_arg 3 nodejs lts java temurin golang 1.26.1
+      The output should eq 'java'
+    End
+
+    It 'returns the last argument for n=count'
+      When call lt_nth_arg 6 nodejs lts java temurin golang 1.26.1
+      The output should eq '1.26.1'
+    End
+
+    It 'leaves the caller'"'"'s own "$@" untouched (own positional'\
+' parameters, per-call)'
+      probe() {
+        lt_nth_arg 2 "$@" >/dev/null
+        printf '%s\n' "$#"
+      }
+      When call probe a b c
+      The output should eq '3'
+    End
+  End
 End

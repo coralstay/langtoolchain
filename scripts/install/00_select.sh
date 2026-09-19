@@ -625,11 +625,47 @@ while read -r each_plugin _each_version; do
   [ -n "$companion" ] && ALL_COMPANIONS="$ALL_COMPANIONS $companion"
 done < "$EACH_TOOL_TMP"
 
-# lt_offer_language <plugin> <default-version> (m-8): asks whether to
-# install one language, its version, then loops through that language's
-# companion tool(s) (if any). Extracted from the while loop below so the
-# loop itself reads as "for each candidate language, offer it" instead of
-# carrying the full per-language interaction inline.
+# lt_forget_language_lines <plugin> (TASK-165, decision-21): remove
+# <plugin>'s line (and its companion's, if any) from $OUT_FILE. Used only
+# when the user backs up into a language that was already answered, so
+# lt_offer_language() can re-record it without leaving a stale duplicate
+# line from the answer being reconsidered.
+#######################################
+# Remove a plugin's (and its companion's) recorded line from $OUT_FILE.
+# Globals:
+#   OUT_FILE (read, written)
+# Arguments:
+#   $1: plugin — asdf plugin name whose line(s) to drop
+# Outputs:
+#   None
+# Returns:
+#   None
+#######################################
+lt_forget_language_lines() {
+  local plugin="$1" forget forget_tmp p v keep sp
+  forget="$plugin $(lt_companion_for_plugin "$plugin")"
+  forget_tmp="$(mktemp)"
+  : > "$forget_tmp"
+  while read -r p v; do
+    keep=true
+    for sp in $forget; do
+      [ "$p" = "$sp" ] && keep=false
+    done
+    $keep && printf '%s %s\n' "$p" "$v" >> "$forget_tmp"
+  done < "$OUT_FILE"
+  mv "$forget_tmp" "$OUT_FILE"
+}
+
+# lt_offer_language <plugin> <default-version> <allow-back> (m-8, TASK-165/
+# decision-21): asks whether to install one language, its version, then
+# loops through that language's companion tool(s) (if any). Extracted from
+# the loop below so the loop itself reads as "for each candidate language,
+# offer it" instead of carrying the full per-language interaction inline.
+#
+# <allow-back> ("true"/"false") controls whether a third "◀ 뒤로" option is
+# offered on the language's own yes/no question - only when there is a
+# previous language to go back to (decision-21 scopes back-navigation to
+# whole languages, not the finer version/companion sub-steps within one).
 #######################################
 # Offer to install one language (and its companion tool(s), if accepted).
 # Globals:
@@ -638,20 +674,31 @@ done < "$EACH_TOOL_TMP"
 # Arguments:
 #   $1: plugin — asdf plugin name
 #   $2: default_version — this plugin's static default version
+#   $3: allow_back — "true" to offer a back option, "false" to omit it
 # Outputs:
-#   Draws prompts to /dev/tty (via tty_out/ask_yes_no/ask_version). Appends
-#   one "<plugin> <version>" line to $OUT_FILE per accepted language or
-#   companion.
+#   Draws prompts to /dev/tty (via tty_out/lt_arrow_menu/ask_version).
+#   Appends one "<plugin> <version>" line to $OUT_FILE per accepted
+#   language or companion.
 # Returns:
-#   None
+#   0 to move forward (whether or not the language was accepted); 1 if the
+#   user chose to go back to the previous language instead
 #######################################
 lt_offer_language() {
-  local plugin="$1" default_version="$2" cmd version companion
+  local plugin="$1" default_version="$2" allow_back="$3"
+  local cmd version companion choice
   local companion_default companion_version
   # Just for a friendlier prompt line, e.g. "nodejs (node)".
   cmd="$(binary_for_plugin "$plugin")"
   tty_out ""
-  if ask_yes_no "Install $plugin ($cmd)?"; then
+  if [ "$allow_back" = "true" ]; then
+    choice="$(lt_arrow_menu "Install $plugin ($cmd)?" 1 \
+      "Yes" "No" "◀ 뒤로 (이전 언어 다시 선택)")"
+  else
+    choice="$(lt_arrow_menu "Install $plugin ($cmd)?" 1 "Yes" "No")"
+  fi
+  [ "$choice" = "3" ] && return 1
+
+  if [ "$choice" = "1" ]; then
     # Fetched here, lazily - only for a language the user just said yes to,
     # never eagerly for all of them up front (m-12/TASK-119.2's fetch-timing
     # decision: waiting on this alongside a prompt the user is already
@@ -679,13 +726,59 @@ lt_offer_language() {
       fi
     done
   fi
+  return 0
 }
 
-while read -r plugin default_version <&3; do
-  # Companion plugin: handled as a follow-up to its parent below, not here.
-  case " $ALL_COMPANIONS " in *" $plugin "*) continue ;; esac
-  lt_offer_language "$plugin" "$default_version"
-done 3< "$EACH_TOOL_TMP"
+# Language list as one flat positional-parameter list ("plugin1" "ver1"
+# "plugin2" "ver2" ...) instead of a stream read in place (m-8's original
+# `while read <&3` loop) - TASK-165/decision-21's back-navigation needs to
+# step the index backward, which a single forward-only stream read can't
+# do. Built inside a function so `set --` only touches this function's own
+# "$@", not this script's own CLI-argument positional parameters.
+#######################################
+# Walk the candidate language list, offering each in turn; supports going
+# back to the previous language (decision-21).
+# Globals:
+#   EACH_TOOL_TMP (read), ALL_COMPANIONS (read), OUT_FILE (read/written via
+#   lt_offer_language/lt_forget_language_lines)
+# Arguments:
+#   None
+# Outputs:
+#   See lt_offer_language.
+# Returns:
+#   None
+#######################################
+lt_run_language_loop() {
+  local total i plugin default_version allow_back prev_plugin
+  set --
+  while read -r plugin default_version; do
+    # Companion plugin: handled as a follow-up to its parent, not here.
+    case " $ALL_COMPANIONS " in *" $plugin "*) continue ;; esac
+    set -- "$@" "$plugin" "$default_version"
+  done < "$EACH_TOOL_TMP"
+  total=$(($# / 2))
+
+  i=1
+  while [ "$i" -le "$total" ]; do
+    plugin="$(lt_nth_arg $(((i - 1) * 2 + 1)) "$@")"
+    default_version="$(lt_nth_arg $(((i - 1) * 2 + 2)) "$@")"
+    if [ "$i" -gt 1 ]; then allow_back=true; else allow_back=false; fi
+
+    if lt_offer_language "$plugin" "$default_version" "$allow_back"; then
+      i=$((i + 1))
+    else
+      # Went back: the language being left behind never got as far as
+      # writing to $OUT_FILE (BACK only fires on its own first question),
+      # but the previous language it's returning to already did - forget
+      # that so it can be answered again without leaving a stale duplicate.
+      prev_plugin="$(lt_nth_arg $(((i - 2) * 2 + 1)) "$@")"
+      lt_forget_language_lines "$prev_plugin"
+      i=$((i - 1))
+    fi
+  done
+}
+
+lt_run_language_loop
 rm -f "$EACH_TOOL_TMP"
 
 # `-s` = file exists and is non-empty. If the user answered "n" to every
