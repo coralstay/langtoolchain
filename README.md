@@ -10,7 +10,6 @@
 [![Powered by asdf](https://img.shields.io/badge/powered%20by-asdf-F16436)](https://asdf-vm.com)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=amosQP_langtoolchain&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=amosQP_langtoolchain)
 
-
 `git clone`도, 수동 설치도 필요 없습니다. 터미널에 한 줄 붙여넣으면 끝.
 
 </div>
@@ -47,6 +46,7 @@ curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 \
 - [사전 요구사항](#-사전-요구사항)
 - [설치/제거되는 것](#-설치제거되는-것)
 - [아키텍처](#-아키텍처)
+- [저장소 구조](#-저장소-구조)
 - [알려진 한계 / 기술적 한계](#-알려진-한계--기술적-한계)
 - [기여하기](#-기여하기)
 - [License](#-license)
@@ -103,12 +103,12 @@ git clone https://github.com/amosQP/langtoolchain.git && cd langtoolchain
 <summary><b>옵션 플래그</b> (<code>curl | sh -s -- &lt;옵션&gt;</code> 형태로 전달 가능)</summary>
 <br>
 
-| 플래그 | 대상 | 동작 |
-|---|---|---|
-| `--all` | install | 언어 선택 화면 없이 `.tool-versions`에 있는 걸 전부 설치 |
-| `--yes` | install / uninstall | 마지막 확인 프롬프트를 건너뜀 |
-| `--dry-run` | install / uninstall | 실제로 아무것도 바꾸지 않고, 뭘 할지만 출력 |
-| `--local` / `--local=<dir>` | install | 전역 대신 현재(또는 지정한) 디렉토리에만 버전 고정 |
+| 플래그                      | 대상                | 동작                                                     |
+| --------------------------- | ------------------- | -------------------------------------------------------- |
+| `--all`                     | install             | 언어 선택 화면 없이 `.tool-versions`에 있는 걸 전부 설치 |
+| `--yes`                     | install / uninstall | 마지막 확인 프롬프트를 건너뜀                            |
+| `--dry-run`                 | install / uninstall | 실제로 아무것도 바꾸지 않고, 뭘 할지만 출력              |
+| `--local` / `--local=<dir>` | install             | 전역 대신 현재(또는 지정한) 디렉토리에만 버전 고정       |
 
 여러 개를 조합할 수 있습니다: `curl ... | sh -s -- --all --yes --dry-run`처럼.
 터미널(tty)이 없는 환경(CI 등)에서 실행하면 자동으로 `--all`처럼 동작합니다 — 입력을 기다리다 멈추지 않습니다.
@@ -119,12 +119,12 @@ git clone https://github.com/amosQP/langtoolchain.git && cd langtoolchain
 
 ## 📋 사전 요구사항
 
-| 필요한 것 | 없으면? |
-|---|---|
-| macOS | 이 도구는 macOS 전용입니다 |
-| `git` (원격 설치 시) | Xcode Command Line Tools에 기본 포함 |
-| ~~Homebrew~~ | 없으면 설치기가 알아서 설치합니다 (sudo 비밀번호는 직접 입력 필요) |
-| ~~asdf~~ | 없으면 `brew install asdf`로 알아서 설치합니다 |
+| 필요한 것            | 없으면?                                                            |
+| -------------------- | ------------------------------------------------------------------ |
+| macOS                | 이 도구는 macOS 전용입니다                                         |
+| `git` (원격 설치 시) | Xcode Command Line Tools에 기본 포함                               |
+| ~~Homebrew~~         | 없으면 설치기가 알아서 설치합니다 (sudo 비밀번호는 직접 입력 필요) |
+| ~~asdf~~             | 없으면 `brew install asdf`로 알아서 설치합니다                     |
 
 <br>
 
@@ -133,15 +133,15 @@ git clone https://github.com/amosQP/langtoolchain.git && cd langtoolchain
 `.tool-versions`에 정의된 기본 언어/버전 — 설치 화면에서 개별적으로 켜고 끄거나 버전을 바꿀 수 있습니다.
 동반 도구(pnpm/gradle)는 각각 그 부모 언어를 설치할 때만 물어보는 선택 사항입니다.
 
-| 언어 / 동반 도구 | 기본 버전 |
-|---|---|
-| 🟩 Node.js | `lts` |
-| &nbsp;&nbsp;└ pnpm (동반) | `10.33.0` |
-| ☕ Java (Temurin) | `temurin-25.0.2+10.0.LTS` |
-| &nbsp;&nbsp;└ gradle (동반) | `9.4.1` |
-| 🐍 Python | `3.12.13` |
-| 🦀 Rust | `1.94.0` |
-| 🐹 Go | `1.26.1` |
+| 언어 / 동반 도구            | 기본 버전                 |
+| --------------------------- | ------------------------- |
+| 🟩 Node.js                  | `lts`                     |
+| &nbsp;&nbsp;└ pnpm (동반)   | `10.33.0`                 |
+| ☕ Java (Temurin)           | `temurin-25.0.2+10.0.LTS` |
+| &nbsp;&nbsp;└ gradle (동반) | `9.4.1`                   |
+| 🐍 Python                   | `3.12.13`                 |
+| 🦀 Rust                     | `1.94.0`                  |
+| 🐹 Go                       | `1.26.1`                  |
 
 Python 컴파일에 필요한 Homebrew 패키지(`openssl`, `readline`, `sqlite3`, `xz`, `zlib`, `tcl-tk`)도 함께 설치됩니다.
 
@@ -179,6 +179,25 @@ install.sh/uninstall.sh가 각각 어떤 phase를 순서대로 거치는지, uni
 
 <br>
 
+## 🗂️ 저장소 구조
+
+| 경로                                     | 역할                                                                                                           |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `install.sh` / `uninstall.sh`            | curl-pipe 진입점. 로컬 clone이 있으면 그대로 실행, 없으면 고정 커밋을 self-clone 후 실행                       |
+| `scripts/install/`, `scripts/uninstall/` | 번호가 매겨진 phase 스크립트(00, 01, 02, ...) + 각각의 `main.sh`                                               |
+| `scripts/lib.sh`                         | 설치/제거 전체가 공유하는 함수 라이브러리 (버전 fetch/캐시, 락, 타임아웃 등)                                   |
+| `scripts/lint/`                          | shellcheck 외에 이 저장소 자체 lint 스크립트(하드코딩 경로 검사 등)                                            |
+| `spec/`                                  | shellspec 테스트 스위트                                                                                        |
+| `docs/`                                  | 사람이 읽는 프로덕트 문서(아키텍처, 스타일 가이드, 조사 기록 등)                                               |
+| `backlog/`                               | Backlog.md CLI가 관리하는 태스크/의사결정/마일스톤 — 폴더별 역할은 [backlog/readme.md](backlog/readme.md) 참고 |
+
+이 저장소의 `backlog/config.yml`은 `filesystem_only: true`, `remote_operations: false`로
+설정돼 있습니다 — 원격 동기화 없이 로컬 git 저장소 안에서만 동작하는 구성입니다. 더 자세한
+내용(각 폴더 안내, 의사결정 이력)은 `backlog decision list`나 `backlog task view <ID>`로
+직접 조회하는 걸 권장합니다 — 여기서 전부 옮겨 적지는 않습니다.
+
+<br>
+
 ## 🧭 알려진 한계 / 기술적 한계
 
 ### 범위상 한계
@@ -200,18 +219,18 @@ install.sh/uninstall.sh가 각각 어떤 phase를 순서대로 거치는지, uni
 
 **이 저장소가 직접 검증하는 지점**
 
-| 지점 | 방식 |
-|---|---|
-| `install.sh`/`uninstall.sh`의 self-clone | 플로팅 브랜치 대신 고정 커밋 SHA로 pin — 브랜치가 강제 push돼도 이미 pin된 커밋만 받음 |
+| 지점                                        | 방식                                                                                                |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `install.sh`/`uninstall.sh`의 self-clone    | 플로팅 브랜치 대신 고정 커밋 SHA로 pin — 브랜치가 강제 push돼도 이미 pin된 커밋만 받음              |
 | Homebrew 공식 설치 스크립트(`curl \| bash`) | 고정 커밋으로 pin + 이 프로젝트가 직접 계산한 SHA-256 체크섬을 fetch 직후 대조, 불일치 시 실행 거부 |
 
 **위임/통제 밖 지점 (이 저장소가 직접 검증하지 않음)**
 
-| 지점 | 위임 대상 / 통제 밖인 이유 |
-|---|---|
-| `brew install asdf`, `brew install <시스템 의존성 6개>` | Homebrew 자체의 bottle 서명/체크섬 체계에 위임 |
+| 지점                                                        | 위임 대상 / 통제 밖인 이유                                                                                                      |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `brew install asdf`, `brew install <시스템 의존성 6개>`     | Homebrew 자체의 bottle 서명/체크섬 체계에 위임                                                                                  |
 | `asdf plugin add`(asdf-nodejs/asdf-python 등 플러그인 소스) | asdf CLI(0.20.0)가 커밋 고정을 지원하지 않음 — 검토 후 미고정 결정, 매 install 실행마다 각 플러그인 저장소의 최신 HEAD로 갱신됨 |
-| `asdf install`(실제 언어 런타임 다운로드) | 각 asdf 플러그인 내부 로직 — 이 저장소가 직접 관여할 수 없음 |
+| `asdf install`(실제 언어 런타임 다운로드)                   | 각 asdf 플러그인 내부 로직 — 이 저장소가 직접 관여할 수 없음                                                                    |
 
 **명시적으로 범위 밖: GitHub 저장소/계정 자체의 탈취.** 공격자가 저장소나 메인테이너 계정을
 완전히 장악하면 install.sh에 박힌 고정 커밋 SHA 자체도 함께 바꿀 수 있어, 위 pin들로는
