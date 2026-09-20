@@ -870,11 +870,19 @@ if [ ! -s "$OUT_FILE" ]; then
   exit 1
 fi
 
-# Recap what was selected before asking for final confirmation.
+# Recap what was selected before asking for final confirmation. Companion
+# tools (TASK-171) get extra indentation so the list visually mirrors the
+# parent/companion relationship the interactive questions already show
+# ("  Also install $companion (companion to $plugin)?") - $ALL_COMPANIONS
+# is still the same space-separated companion-plugin-name list built
+# earlier for the main selection loop above.
 tty_out ""
 tty_out "== Install list =="
 while read -r plugin version; do
-  tty_out "  $plugin  $version"
+  case " $ALL_COMPANIONS " in
+    *" $plugin "*) tty_out "    $plugin  $version" ;;
+    *) tty_out "  $plugin  $version" ;;
+  esac
 done < "$OUT_FILE"
 tty_out ""
 
