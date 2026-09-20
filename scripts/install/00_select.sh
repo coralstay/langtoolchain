@@ -513,6 +513,50 @@ ask_yes_no() {
 # Returns:
 #   None
 #######################################
+# lt_version_walkthrough <default> (TASK-168): reads option labels one per
+# line on stdin (lt_version_menu_options()'s output - same list ask_version
+# always builds) and walks through them in order against /dev/tty: bare
+# Enter picks the current candidate, anything else + Enter moves to the
+# next one. This is ask_version()'s no-raw-mode counterpart to
+# lt_arrow_menu() - no number or version string is ever typed, only Enter
+# vs. not-Enter, so it needs no lt_valid_menu_choice()-style validation.
+# Exhausting every candidate without an Enter (the user skipped all of
+# them) falls back to <default>, same "installation is never blocked"
+# guarantee decision-17 already established for the arrow-menu's own
+# failure path.
+#######################################
+# Walk through version candidates one at a time; bare Enter selects.
+# Globals:
+#   None
+# Arguments:
+#   $1: default — the already-resolved default version string
+# Outputs:
+#   Draws each "<label> 사용?" prompt to /dev/tty. Writes the chosen
+#   version string to STDOUT.
+# Returns:
+#   None
+#######################################
+lt_version_walkthrough() {
+  local default="$1" label i=1 reply
+  while IFS= read -r label; do
+    tty_prompt "  ${label} 사용? [Enter=예, 다른 키+Enter=다음] > "
+    read -r reply < /dev/tty || reply=""
+    if [ -z "$reply" ]; then
+      # Option 1 always carries the "(default)" suffix cosmetically added
+      # by lt_version_menu_options() - print the bare $default instead of
+      # that decorated label, same convention as the arrow-menu path below.
+      if [ "$i" -eq 1 ]; then
+        printf '%s\n' "$default"
+      else
+        printf '%s\n' "$label"
+      fi
+      return
+    fi
+    i=$((i + 1))
+  done
+  printf '%s\n' "$default"
+}
+
 ask_version() {
   local plugin="$1" default="$2" list_tmp options_tmp opt chosen i
   list_tmp="$(mktemp)"
@@ -524,31 +568,44 @@ ask_version() {
   lt_version_menu_options "$default" < "$list_tmp" > "$options_tmp"
   rm -f "$list_tmp"
 
-  # Load the option labels into this function's own positional params
-  # (fd redirection, not a pipe, so this loop runs in the current shell -
-  # same reasoning as the EACH_TOOL_TMP/fd-3 loop further below).
-  set --
-  while IFS= read -r opt; do
-    set -- "$@" "$opt"
-  done < "$options_tmp"
-  rm -f "$options_tmp"
+  # TASK-168: probe raw-mode capability ourselves, ahead of lt_arrow_menu -
+  # when it's not available, skip that widget entirely (rather than letting
+  # it degrade into its own generic numbered-prompt fallback, which is
+  # shared with ask_yes_no()/the scope prompt and still requires typing a
+  # digit) and walk the candidates one at a time instead, never typing a
+  # number or version string.
+  if stty -g < /dev/tty > /dev/null 2>&1; then
+    # Load the option labels into this function's own positional params
+    # (fd redirection, not a pipe, so this loop runs in the current shell -
+    # same reasoning as the EACH_TOOL_TMP/fd-3 loop further below).
+    set --
+    while IFS= read -r opt; do
+      set -- "$@" "$opt"
+    done < "$options_tmp"
+    rm -f "$options_tmp"
 
-  chosen="$(lt_arrow_menu "Version:" 1 "$@")"
-  i=1
-  for opt in "$@"; do
-    if [ "$i" -eq "$chosen" ]; then
-      # Option 1 always carries the "(default)" suffix cosmetically added
-      # by lt_version_menu_options() above - print the bare $default
-      # instead of that decorated label.
-      if [ "$i" -eq 1 ]; then
-        printf '%s\n' "$default"
-      else
-        printf '%s\n' "$opt"
+    chosen="$(lt_arrow_menu "Version:" 1 "$@")"
+    i=1
+    for opt in "$@"; do
+      if [ "$i" -eq "$chosen" ]; then
+        # Option 1 always carries the "(default)" suffix cosmetically added
+        # by lt_version_menu_options() above - print the bare $default
+        # instead of that decorated label.
+        if [ "$i" -eq 1 ]; then
+          printf '%s\n' "$default"
+        else
+          printf '%s\n' "$opt"
+        fi
+        break
       fi
-      break
-    fi
-    i=$((i + 1))
-  done
+      i=$((i + 1))
+    done
+  else
+    tty_out "  Version candidates:"
+    lt_render_version_table < "$options_tmp" > /dev/tty
+    lt_version_walkthrough "$default" < "$options_tmp"
+    rm -f "$options_tmp"
+  fi
 }
 
 # Create the file the selection will be written to. `-t` gives it a
