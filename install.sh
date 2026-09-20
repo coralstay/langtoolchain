@@ -42,7 +42,7 @@ set -eu
 # default path actually promised. Only fires the warning below when one of
 # these is actually set, so the default (no env vars) path stays silent.
 readonly REPO_URL="${LANGTOOLCHAIN_REPO_URL:-https://github.com/coralstay/langtoolchain.git}"
-readonly BRANCH="${LANGTOOLCHAIN_BRANCH:-896b4c5a7ecf82f43056d0cae7bb787f1ab3ee83}"
+readonly BRANCH="${LANGTOOLCHAIN_BRANCH:-15432bdd5f848c32b6aa16a274289d02864c533f}"
 
 # $0 is this file's own path when it was executed from an actual file on
 # disk — but POSIX sh has no BASH_SOURCE, and unlike bash, $0 is USUALLY
