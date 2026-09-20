@@ -1,12 +1,19 @@
 ---
 id: TASK-169
 title: 버전 목록 순차 사전다운로드 + companion(pnpm/uv) fetch 튜닝
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-20 01:33'
-updated_date: '2026-09-20 01:34'
+updated_date: '2026-09-20 01:51'
 labels: []
 dependencies: []
+modified_files:
+  - scripts/lib.sh
+  - scripts/install/00_select.sh
+  - spec/lib_spec.sh
+  - >-
+    backlog/decisions/decision-22 -
+    버전-목록은-언어-선택-전에-전부-순차-사전다운로드-decision-16-TASK-119.2를-뒤집음.md
 ---
 
 ## Description
@@ -24,8 +31,14 @@ companion(pnpm/uv) 버전 프롬프트가 목록을 못 보여주는 원인: (1)
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 언어 선택 질문 시작 전에 8개 플러그인 전부의 버전 목록이 순서대로 사전 fetch되어 캐시가 채워진다
-- [ ] #2 pnpm/uv 목록 fetch가 python처럼 확대된 타임아웃을 쓴다
-- [ ] #3 uv가 런당 GitHub API를 1회만 호출한다(latest 별도 호출 제거)
-- [ ] #4 decision-16/TASK-119.2를 뒤집는 정책 변경이 새 decision으로 기록된다
+- [x] #1 언어 선택 질문 시작 전에 8개 플러그인 전부의 버전 목록이 순서대로 사전 fetch되어 캐시가 채워진다
+- [x] #2 pnpm/uv 목록 fetch가 python처럼 확대된 타임아웃을 쓴다
+- [x] #3 uv가 런당 GitHub API를 1회만 호출한다(latest 별도 호출 제거)
+- [x] #4 decision-16/TASK-119.2를 뒤집는 정책 변경이 새 decision으로 기록된다
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+decision-22 기록 후 00_select.sh에 8개 플러그인 순차 사전다운로드 추가('버전 정보 가져오는 중...' 표시). pnpm/uv 목록 fetch에 LT_LARGE_LIST_TIMEOUT(20초) 부여, uv는 lt_resolve_version_list()를 통해 목록 첫 항목을 기본값으로 재사용해 GitHub API 호출 런당 2회->1회로 축소. shellspec 2건을 바뀐 fetch 경로(목록 캐시/서킷브레이커 파일 격리 + 멀티라인 mock)에 맞게 갱신. expect로 사전다운로드 메시지와 pnpm companion 버전 목록이 실제로 뜨는 것 확인. 커밋 7947a97.
+<!-- SECTION:FINAL_SUMMARY:END -->
