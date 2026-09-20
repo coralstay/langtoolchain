@@ -938,6 +938,10 @@ RUNNER_EOF
         printf 'eee\trefs/tags/v3.14.7a1\n'
         printf 'fff\trefs/tags/v3.14.2\n'
       End
+      # git is mocked above (instant), so this isn't testing the timeout
+      # value itself - only shrinking it so the example doesn't pay the
+      # real 20s LT_PYTHON_TAGS_TIMEOUT default for no reason (TASK-173).
+      LT_PYTHON_TAGS_TIMEOUT=1
       When call lt_upstream_latest_version python
       The status should be success
       # 3.14.10 must sort after 3.14.7/3.14.9 numerically (field-by-field),
@@ -1171,6 +1175,9 @@ RUNNER_EOF
         printf 'eee\trefs/tags/v3.14.7a1\n'
         printf 'fff\trefs/tags/v3.14.2\n'
       End
+      # git is mocked above (instant) - see TASK-173's comment on the
+      # earlier lt_upstream_latest_version python test for why this is set.
+      LT_PYTHON_TAGS_TIMEOUT=1
       When call lt_upstream_version_list python
       The status should be success
       The line 1 of output should eq '3.14.10'
@@ -1390,6 +1397,9 @@ RUNNER_EOF
       Mock git
         exit 1
       End
+      # git/curl are mocked above (instant) - see TASK-173's comment on the
+      # earlier lt_upstream_latest_version python test for why this is set.
+      LT_PYTHON_TAGS_TIMEOUT=1
       When call lt_resolve_default_version python '3.12.13'
       The status should be success
       The output should eq '3.12.13'
