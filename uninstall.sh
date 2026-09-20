@@ -21,7 +21,7 @@ set -eu
 # LANGTOOLCHAIN_REPO_URL / LANGTOOLCHAIN_BRANCH (TASK-117.6): same opt-in
 # override as install.sh — see its copy of this comment for the reasoning.
 readonly REPO_URL="${LANGTOOLCHAIN_REPO_URL:-https://github.com/coralstay/langtoolchain.git}"
-readonly BRANCH="${LANGTOOLCHAIN_BRANCH:-15432bdd5f848c32b6aa16a274289d02864c533f}"
+readonly BRANCH="${LANGTOOLCHAIN_BRANCH:-25ffaf71d7a65d69d68c1f22ca87b50d9dedca11}"
 
 # $0, not ${BASH_SOURCE[0]:-} (POSIX sh has no BASH_SOURCE) — see
 # install.sh for why the -f check below is what actually does the real/
