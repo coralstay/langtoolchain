@@ -1211,6 +1211,19 @@ LT_VERSION_FETCH_TIMEOUT="${LT_VERSION_FETCH_TIMEOUT:-5}"
 # not readonly.
 LT_PYTHON_TAGS_TIMEOUT="${LT_PYTHON_TAGS_TIMEOUT:-20}"
 
+# LT_LARGE_LIST_TIMEOUT (TASK-169): same reasoning as LT_PYTHON_TAGS_TIMEOUT
+# above, for lt_upstream_version_list()'s pnpm and uv branches specifically.
+# Measured live: nodejs's own list JSON is ~331KB, but pnpm's npm-registry
+# response is ~1.88MB and uv's GitHub Releases response is ~9.65MB - 4x and
+# 23x larger respectively, on the same shared 5s LT_VERSION_FETCH_TIMEOUT
+# budget every other (small-payload) branch uses. On an ordinary (not
+# fast/low-latency) connection either is a plausible single point of
+# failure that then trips the session-wide circuit breaker (decision-17)
+# for every plugin asked afterward - which is exactly what made companion
+# tools (asked after their parent language) look broken while the parent
+# itself resolved fine. Override-able like every other *_TIMEOUT above.
+LT_LARGE_LIST_TIMEOUT="${LT_LARGE_LIST_TIMEOUT:-20}"
+
 # lt_adoptium_arch: prints the CPU architecture name Adoptium's API expects
 # (used by lt_upstream_latest_version's java case below) - different from
 # lt_homebrew_prefix's own uname -m mapping only in spelling ("aarch64" vs
@@ -1413,12 +1426,25 @@ lt_upstream_latest_version() {
       # official JSON distribution index of its own (unlike the 7 languages
       # above, each with a dedicated official index/API) - GitHub's Releases
       # API is the fallback decision-4 already set aside for exactly this
-      # case. "tag_name" is already bare (e.g. "0.12.9", no leading "v"),
-      # matching asdf-uv's own version strings directly - no reformatting.
-      body="$(curl -fsS --max-time "$LT_VERSION_FETCH_TIMEOUT" \
-        'https://api.github.com/repos/astral-sh/uv/releases/latest' \
-        2>/dev/null)" || return 1
-      printf '%s\n' "$body" | lt_json_field tag_name
+      # case.
+      #
+      # TASK-169: this used to hit /releases/latest directly - a second,
+      # independent GitHub API call on top of the /releases?per_page=100
+      # list call every normal run already needs (ask_version() resolves
+      # both the default and the full list for every plugin). GitHub's
+      # unauthenticated rate limit (60 req/hour/IP) is easy to exhaust
+      # across a few installs while testing, deterministically reproducing
+      # "uv's version list/default never resolves" for up to an hour after.
+      # Routing through lt_resolve_version_list() (its cache, not a raw
+      # lt_upstream_version_list() call) instead means this is a cache hit
+      # - not a second network call - whenever TASK-169's sequential
+      # prefetch (00_select.sh) already warmed uv's list moments earlier in
+      # the same run, which is the common case now. lt_upstream_version_
+      # list()'s uv branch already returns newest-first (lt_github_release_
+      # tags' contract), so the first line is exactly "latest".
+      body="$(lt_resolve_version_list uv 2>/dev/null)" || return 1
+      [ -n "$body" ] || return 1
+      printf '%s\n' "$body" | head -1
       ;;
     *)
       # Unknown plugin (e.g. this repo's own custom TOOL_VERSIONS_FILE users
@@ -1577,8 +1603,10 @@ lt_upstream_version_list() {
       # (e.g. "6.23.7-202112041634"), then a numeric sort (macOS's BSD
       # sort has no -V, same reason the python branch below needs one)
       # puts them newest-first regardless of the registry's own publish-
-      # order listing.
-      body="$(curl -fsS --max-time "$LT_VERSION_FETCH_TIMEOUT" \
+      # order listing. LT_LARGE_LIST_TIMEOUT (TASK-169), not the generic
+      # LT_VERSION_FETCH_TIMEOUT every small-payload branch uses - this
+      # response runs ~1.88MB, measured live, well past what 5s budgets for.
+      body="$(curl -fsS --max-time "$LT_LARGE_LIST_TIMEOUT" \
         -H 'Accept: application/vnd.npm.install-v1+json' \
         'https://registry.npmjs.org/pnpm' 2>/dev/null)" || return 1
       printf '%s\n' "$body" |
@@ -1772,12 +1800,16 @@ lt_upstream_version_list() {
       [ "$found" = true ] || return 1
       ;;
     uv)
-      # Same GitHub Releases source as the single-value branch above, just
-      # the releases *list* endpoint instead of */releases/latest - see
-      # rust's branch above for why per_page=100 (one page) rather than
-      # paginating through this repo's full release history (300+ tags as
-      # of this writing).
-      body="$(curl -fsS --max-time "$LT_VERSION_FETCH_TIMEOUT" \
+      # GitHub Releases list endpoint - see rust's branch above for why
+      # per_page=100 (one page) rather than paginating through this repo's
+      # full release history (300+ tags as of this writing). The single-
+      # value branch above (lt_upstream_latest_version's uv case) no longer
+      # hits its own endpoint (TASK-169) - it calls lt_resolve_version_list,
+      # which lands here on a cache miss, so this is now the only place uv's
+      # GitHub API budget gets spent. LT_LARGE_LIST_TIMEOUT (TASK-169), not
+      # the generic LT_VERSION_FETCH_TIMEOUT - this response runs ~9.65MB,
+      # measured live, 23x nodejs's own list JSON.
+      body="$(curl -fsS --max-time "$LT_LARGE_LIST_TIMEOUT" \
         'https://api.github.com/repos/astral-sh/uv/releases?per_page=100' \
         2>/dev/null)" || return 1
       printf '%s\n' "$body" | lt_github_release_tags
