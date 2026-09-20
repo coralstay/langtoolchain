@@ -682,6 +682,29 @@ while read -r each_plugin _each_version; do
   [ -n "$companion" ] && ALL_COMPANIONS="$ALL_COMPANIONS $companion"
 done < "$EACH_TOOL_TMP"
 
+# Sequential prefetch (TASK-169, decision-22): warm LT_VERSION_LIST_CACHE_
+# FILE for every plugin - languages and their companions alike - before
+# any "Install X?" question is asked, instead of the original lazy-at-
+# selection-time-only approach (decision-16/m-12's TASK-119.2). Reverses
+# that stance deliberately (see decision-22): a companion asked later in
+# the walk used to inherit whatever timeout/rate-limit failure its parent
+# (or an earlier plugin) already tripped the session-wide circuit breaker
+# with (decision-17), invisibly, deep in the interactive flow. Fetching
+# everything up front doesn't change that a single failure still poisons
+# the rest of the run - it only moves the moment that failure becomes
+# visible to before the first question, instead of appearing as a
+# mysteriously empty companion menu partway through. Failures are silent
+# here on purpose: ask_version() already prints its own per-plugin
+# "couldn't fetch" notice if a list didn't end up warm by the time it's
+# actually needed - this loop's job is only to populate the cache early.
+tty_out "  버전 정보 가져오는 중..."
+while read -r each_plugin _each_version; do
+  lt_resolve_version_list "$each_plugin" > /dev/null 2>&1
+done < "$EACH_TOOL_TMP"
+for each_plugin in $ALL_COMPANIONS; do
+  lt_resolve_version_list "$each_plugin" > /dev/null 2>&1
+done
+
 # lt_forget_language_lines <plugin> (TASK-165, decision-21): remove
 # <plugin>'s line (and its companion's, if any) from $OUT_FILE. Used only
 # when the user backs up into a language that was already answered, so

@@ -849,6 +849,23 @@ RUNNER_EOF
     # rules) - each Mock's canned response is a trimmed real-shape fixture
     # captured from the actual upstream API/manifest during TASK-118's
     # research, not an invented shape.
+    #
+    # TASK-169: uv's branch now calls lt_resolve_version_list() (not a
+    # direct curl call of its own), which touches LT_VERSION_LIST_CACHE_
+    # FILE/LT_VERSION_LIST_UNREACHABLE_FILE - point both at scratch paths,
+    # same "never touch real machine state" rule as every other cache-
+    # touching Describe block in this file.
+    setup() {
+      LT_VERSION_LIST_CACHE_FILE="$(mktemp)"
+      rm -f "$LT_VERSION_LIST_CACHE_FILE"
+      LT_VERSION_LIST_UNREACHABLE_FILE="$(mktemp)"
+      rm -f "$LT_VERSION_LIST_UNREACHABLE_FILE"
+    }
+    cleanup() {
+      rm -f "$LT_VERSION_LIST_CACHE_FILE" "$LT_VERSION_LIST_UNREACHABLE_FILE"
+    }
+    BeforeEach 'setup'
+    AfterEach 'cleanup'
 
     It 'passes nodejs straight through as "lts" - no network call at all'
       Mock curl
@@ -878,11 +895,12 @@ RUNNER_EOF
       The output should eq '9.7.1'
     End
 
-    It 'extracts the tag_name from GitHub Releases for uv'\
-' (m-12/TASK-121, decision-5)'
+    It 'extracts the newest tag_name from the GitHub Releases list for'\
+' uv (m-12/TASK-121, decision-5; TASK-169: via lt_resolve_version_list,'\
+' not a direct /releases/latest call)'
       Mock curl
-        echo '{"tag_name":"0.12.9","name":"0.12.9",'\
-'"draft":false,"prerelease":false}'
+        printf '"tag_name": "0.12.9",\n"draft": false,\n"prerelease": false,\n'
+        printf '"tag_name": "0.12.8",\n"draft": false,\n"prerelease": false,\n'
       End
       When call lt_upstream_latest_version uv
       The status should be success
@@ -1317,12 +1335,21 @@ RUNNER_EOF
     # Every example here points the cache at a scratch file, never the real
     # $HOME/.langtoolchain-version-cache - lt_resolve_default_version's
     # success path writes to LT_VERSION_CACHE_FILE, and this repo's own
-    # safety rule is that tests never touch real machine state.
+    # safety rule is that tests never touch real machine state. Also
+    # isolates LT_VERSION_LIST_CACHE_FILE/LT_VERSION_LIST_UNREACHABLE_FILE
+    # (TASK-169: uv's path now goes through lt_resolve_version_list()).
     setup() {
       LT_VERSION_CACHE_FILE="$(mktemp)"
       rm -f "$LT_VERSION_CACHE_FILE"
+      LT_VERSION_LIST_CACHE_FILE="$(mktemp)"
+      rm -f "$LT_VERSION_LIST_CACHE_FILE"
+      LT_VERSION_LIST_UNREACHABLE_FILE="$(mktemp)"
+      rm -f "$LT_VERSION_LIST_UNREACHABLE_FILE"
     }
-    cleanup() { rm -f "$LT_VERSION_CACHE_FILE"; }
+    cleanup() {
+      rm -f "$LT_VERSION_CACHE_FILE" "$LT_VERSION_LIST_CACHE_FILE" \
+        "$LT_VERSION_LIST_UNREACHABLE_FILE"
+    }
     BeforeEach 'setup'
     AfterEach 'cleanup'
 
@@ -1422,9 +1449,10 @@ RUNNER_EOF
     End
 
     It 'resolves the companion tool uv through the same'\
-' dynamic+cache path as the 7 languages (m-12/TASK-121.3)'
+' dynamic+cache path as the 7 languages (m-12/TASK-121.3; TASK-169:'\
+' via the version-list cache/fetch, not a direct /releases/latest call)'
       Mock curl
-        echo '{"tag_name":"0.12.9"}'
+        printf '"tag_name": "0.12.9",\n"draft": false,\n"prerelease": false,\n'
       End
       When call lt_resolve_default_version uv '0.12.9'
       The status should be success
