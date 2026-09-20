@@ -1723,4 +1723,29 @@ RUNNER_EOF
       The output should eq '3'
     End
   End
+
+  Describe 'lt_render_version_table() (TASK-168)'
+    # Same stdin-piping wrapper pattern as version_menu_options_from above.
+    render_table_from() {
+      printf '%s\n' "$1" | lt_render_version_table
+    }
+
+    It 'renders a header, separator, and one numbered row per input line'
+      When call render_table_from \
+        "$(printf '1.3.0 (default)\n1.2.0\n1.1.0')"
+      The line 1 should include '#'
+      The line 2 should include '---'
+      The line 3 should include '1)'
+      The line 3 should include '1.3.0 (default)'
+      The line 4 should include '2)'
+      The line 4 should include '1.2.0'
+      The line 5 should include '3)'
+      The line 5 should include '1.1.0'
+    End
+
+    It 'produces exactly header+separator+one row for a single-item list'
+      When call render_table_from '9.9.9 (default)'
+      The lines of output should eq 3
+    End
+  End
 End

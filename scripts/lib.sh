@@ -2254,3 +2254,35 @@ lt_nth_arg() {
   done
   printf '%s\n' "$1"
 }
+
+# lt_render_version_table (TASK-168): render an SDKMAN `sdk list`-flavored
+# numbered table from lt_version_menu_options()'s output (one option label
+# per line on stdin, first line already carrying the " (default)" suffix).
+# Used only by 00_select.sh's ask_version() when the terminal can't do
+# raw-mode arrow-key input (stty -g failing) - that path replaces typing a
+# number with a plain Enter/skip walkthrough (lt_version_walkthrough() in
+# 00_select.sh), so this table is purely informational: it lets the user
+# see every fetched candidate up front before being walked through them one
+# at a time. No /dev/tty access here (plain stdin/stdout), so it's
+# unit-testable directly, same reasoning as lt_version_menu_options above.
+#######################################
+# Render a numbered version table from one label per line on stdin.
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   A header row, a separator line, and one numbered row per input line,
+#   to STDOUT.
+# Returns:
+#   None
+#######################################
+lt_render_version_table() {
+  local i=1 line
+  printf '  %-4s%s\n' '#' '버전'
+  printf '  %-4s%s\n' '---' '----------------'
+  while IFS= read -r line; do
+    printf '  %-4s%s\n' "$i)" "$line"
+    i=$((i + 1))
+  done
+}
